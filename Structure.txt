@@ -1,0 +1,18 @@
+Hospital_Analytics_System/
+
+│
+├── data/
+│      hospital_data.csv
+│
+├── src/
+│      cleaning.py
+│      analysis.py
+│      visualization.py
+│
+├── outputs/
+│
+├── app.py
+│
+├── requirements.txt
+│
+└── README.md
