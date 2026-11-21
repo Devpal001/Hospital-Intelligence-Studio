@@ -68,23 +68,23 @@
         </section>
 
         <section class="view" id="view-prediction">
-          <div class="page-heading"><div><p class="eyebrow">HOSPITAL OPERATIONS · LENGTH-OF-STAY MODEL</p><h1>Length-of-stay forecast<span>.</span></h1><p class="subheading">Your seven-factor multivariate regression model, connected to an interactive scenario form.</p></div><div class="model-badge"><span>✳</span> 7-FACTOR LINEAR REGRESSION</div></div>
-          <div class="notice warning-notice"><span class="notice-icon">!</span><span><strong>Model validation is incomplete.</strong> The training CSV referenced by your original script is missing from this workspace. These saved coefficients are for demonstration until checked against the original dataset.</span></div>
-          <article class="panel los-panel primary-los-panel"><div class="panel-heading"><div><h3>Your length-of-stay model</h3><p>Enter the seven factors used by your existing regression</p></div><span class="step-label">PRIMARY MODEL</span></div>
+          <div class="page-heading"><div><p class="eyebrow">HOSPITAL OPERATIONS · LENGTH-OF-STAY MODEL</p><h1>Length-of-stay forecast<span>.</span></h1><p class="subheading">A retrainable, multi-parameter model using patient details available at admission.</p></div><div class="model-badge"><span>✳</span> 7 INPUT FEATURES</div></div>
+          <div class="notice warning-notice"><span class="notice-icon">!</span><span><strong>Educational prototype.</strong> The 10,000-row dataset has no documented provenance. ICU status, hospital-acquired infection and discharge delay are excluded because they may only be known after admission. This model is not validated for hospital use.</span></div>
+          <article class="panel los-panel primary-los-panel"><div class="panel-heading"><div><h3>Admission-time stay estimate</h3><p>Enter the seven features used by the evaluated model</p></div><span class="step-label">PRIMARY MODEL</span></div>
             <div class="los-layout">
               <form id="los-form" class="los-form">
-                <label>Age<input id="los-age" type="number" min="0" max="120" value="65" required /></label>
+                <label>Age<input id="los-age" type="number" min="1" max="120" value="65" required /></label>
+                <label>Gender<select id="los-gender"><option>Female</option><option>Male</option></select></label>
+                <label>Primary diagnosis<select id="los-diagnosis"><option>Heart Failure</option><option>Diabetes Complications</option><option>Fracture</option><option>COPD/Asthma Exacerbation</option><option>UTI/Kidney Infection</option><option>Gastrointestinal Disorder</option><option>Appendicitis</option><option>Pneumonia</option></select></label>
                 <label>Comorbidities count<input id="los-comorbidities" type="number" min="0" max="50" value="2" required /></label>
                 <label>Surgery flag<select id="los-surgery"><option value="0">No (0)</option><option value="1">Yes (1)</option></select></label>
-                <label>ICU flag<select id="los-icu"><option value="0">No (0)</option><option value="1">Yes (1)</option></select></label>
-                <label>Hospital acquired infection<select id="los-infection"><option value="0">No (0)</option><option value="1">Yes (1)</option></select></label>
-                <label>Discharge delay (days)<input id="los-delay" type="number" min="0" max="365" value="0" required /></label>
-                <label>Social support value<input id="los-support" type="number" min="0" max="100" value="1" required /><small>Enter the encoding used when your model was trained.</small></label>
+                <label>Insurance type<select id="los-insurance"><option>Government</option><option>Private</option><option>Uninsured</option></select></label>
+                <label>Social support value<select id="los-support"><option value="1">Available (1)</option><option value="0">Not available (0)</option></select></label>
                 <button class="primary-button" id="los-button" type="submit">Estimate length of stay <span>→</span></button>
               </form>
-              <div class="los-result" id="los-result" aria-live="polite"><span class="placeholder-icon">⌁</span><strong>Length-of-stay estimate</strong><span>Uses the saved coefficients from your existing model.</span></div>
+              <div class="los-result" id="los-result" aria-live="polite"><span class="placeholder-icon">⌁</span><strong>Length-of-stay estimate</strong><span>Uses a fitted pipeline with categorical encoding and numeric scaling.</span></div>
             </div>
-            <p class="los-disclaimer">This model estimates stay duration only; bed occupancy forecasting also needs admission dates, discharge dates, and available bed capacity.</p>
+            <p class="los-disclaimer" id="model-metrics">Evaluation metrics load with the model. Random-split performance is not evidence of performance at a new hospital.</p>
           </article>
           <details class="secondary-models"><summary>Explore auxiliary outcome estimates from the bundled sample</summary>
           <div class="notice warning-notice"><span class="notice-icon">!</span><span>These separate estimates use a small dataset with undocumented provenance and unusually regular patterns. They are educational examples only.</span></div>

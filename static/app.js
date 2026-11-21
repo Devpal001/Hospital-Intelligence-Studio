@@ -154,17 +154,17 @@ byId("los-form").addEventListener("submit", async (event) => {
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
         age: Number(byId("los-age").value),
+        gender: byId("los-gender").value,
+        primary_diagnosis: byId("los-diagnosis").value,
         comorbidities_count: Number(byId("los-comorbidities").value),
         surgery_flag: Number(byId("los-surgery").value),
-        icu_flag: Number(byId("los-icu").value),
-        hospital_acquired_infection: Number(byId("los-infection").value),
-        discharge_delay_days: Number(byId("los-delay").value),
+        insurance_type: byId("los-insurance").value,
         social_support: Number(byId("los-support").value),
       }),
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.detail || "Length-of-stay request failed.");
-    result.innerHTML = `<span class="placeholder-icon">⌁</span><span class="los-value">${number(payload.prediction_days, 1)} days</span><strong>Estimated length of stay</strong><span>Seven-factor linear regression</span>`;
+    result.innerHTML = `<span class="placeholder-icon">⌁</span><span class="los-value">${number(payload.prediction_days, 1)} days</span><strong>Estimated length of stay</strong><span>Admission-time linear regression</span>`;
   } catch (error) {
     showToast(error.message || "The length-of-stay model could not return an estimate.");
   } finally {
@@ -174,3 +174,9 @@ byId("los-form").addEventListener("submit", async (event) => {
 });
 
 loadSummary();
+
+fetch("/api/model-info").then((response) => response.ok ? response.json() : null).then((info) => {
+  if (!info) return;
+  const holdout = info.holdout;
+  byId("model-metrics").textContent = `Holdout MAE ${number(holdout.mae_days, 2)} days · RMSE ${number(holdout.rmse_days, 2)} days · R² ${number(holdout.r2, 2)} · 5-fold CV MAE ${number(info.five_fold_cv_mae_days_mean, 2)} ± ${number(info.five_fold_cv_mae_days_std, 2)} days. Educational sample only.`;
+}).catch(() => {});

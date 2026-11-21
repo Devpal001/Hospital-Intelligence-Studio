@@ -1,60 +1,56 @@
 # Hospital Intelligence Studio
 
-An educational hospital analytics project with a FastAPI web application, a responsive dashboard, aggregate analytics, and two prediction workflows. The Vercel production entrypoint is `main.py`; the earlier Streamlit prototype remains available locally in `app.py`.
+An educational hospital analytics project with a FastAPI web application, dashboard, aggregate analytics, and a reproducible multi-parameter length-of-stay (LOS) prediction workflow. `main.py` is the Vercel entrypoint; the earlier Streamlit prototype remains in `app.py`.
 
 ## Stack
 
-- **FastAPI + Python 3.12** for the web app and JSON API
-- **pandas + scikit-learn** for data summaries and prediction
-- **HTML, CSS, and JavaScript** for the responsive dashboard UI
-- **Vercel Python Functions** for hosting
+- FastAPI and Python for the app and JSON API
+- pandas and scikit-learn for data preparation, evaluation, and prediction
+- joblib for the fitted model pipeline
+- HTML, CSS, and JavaScript for the dashboard
+- Vercel Python Functions for hosting
 
 ## Run locally
 
+Install dependencies and train the LOS model from the local training CSV:
+
 ```bash
 python -m pip install -r requirements.txt
+python train_los_model.py
 uvicorn main:app --reload
 ```
 
-Open `http://127.0.0.1:8000`. The API schema is at `/docs`; `/api/health` checks service availability.
+Open `http://127.0.0.1:8000`. API documentation is at `/docs` and `/api/health` checks service status. The training command writes `models/los_admission_pipeline.joblib` and `models/los_model_metrics.json`.
 
-To run the original Streamlit prototype instead:
+The earlier Streamlit prototype is separate:
 
 ```bash
 python -m pip install -r requirements-streamlit.txt
 streamlit run app.py
 ```
 
-## Vercel deployment
+## Model
 
-The project is configured for Vercel's Python runtime. Connect the repository to Vercel and deploy the project root. Vercel reads the Python version from `.python-version`, installs `requirements.txt`, and uses `main.py` as the FastAPI entrypoint. `vercel.json` includes the HTML, CSS, JavaScript, and CSV assets needed by the function.
+The LOS endpoint predicts from age, gender, primary diagnosis, comorbidity count, planned surgery flag, insurance type, and social support. It uses numeric imputation/scaling, one-hot categorical encoding, and linear regression. Patient ID is excluded. ICU status, hospital-acquired infection, and discharge delay are excluded because they can be known only after admission and risk leakage for an admission-time forecast.
 
-For CLI deployment, install and authenticate the Vercel CLI, then run:
+Evaluation on the supplied 10,000-row sample uses an 80/20 random holdout and five-fold cross-validation. Current holdout MAE is 2.18 days, RMSE 2.81 days, and R² 0.27; five-fold CV MAE is 2.16 ± 0.04 days. This is modest performance on an undocumented dataset, not evidence of performance at another hospital. The model does not forecast bed occupancy; that would require time-stamped admissions/discharges and available bed capacity.
 
-```bash
-vercel
-vercel --prod
-```
+The `scikit.py` compatibility entrypoint retrains and evaluates the same pipeline. `hospitalbedoccupancypredictor.py` runs an interactive local demo using the fitted artifact. Both are import-safe.
 
-## Web routes
+## Vercel
+
+Connect the repository to Vercel and deploy the project root. `vercel.json` includes dashboard assets, the fitted model, evaluation metadata, and the legacy aggregate-demo CSV. The patient-level 10,000-row CSV is excluded from Vercel uploads. Do not commit patient-level source records to a public repository; deploy only the model artifact and aggregate evaluation metadata.
+
+## Routes
 
 - `/` — dashboard, insights, and prediction lab
-- `/api/summary` — aggregate metrics only
-- `/api/predict` — five scenario-based estimates from the 984-row demonstration dataset
-- `/api/predict/length-of-stay` — the seven-factor linear model from `hospitalbedoccupancypredictor.py`
-- `/api/health` — service health check
+- `/api/summary` — aggregate metrics from the legacy demonstration dataset
+- `/api/predict` — auxiliary estimates from the legacy sample
+- `/api/predict/length-of-stay` — admission-time LOS model
+- `/api/model-info` — holdout and cross-validation metrics
+- `/api/health` — service health
 - `/docs` — interactive API documentation
 
-The hosted API deliberately does not return patient-level records. Do not upload real patient data to this public demo.
+## Limitations
 
-## Prediction workflow
-
-The demonstration prediction endpoint accepts age, gender, condition, and procedure and returns estimates for readmission, outcome, cost, length of stay, and satisfaction. It uses one Extra Trees model per target, trained once per warm serverless function instance and cached in memory. Unknown category combinations are rejected. Class probabilities are displayed as model estimates, not calibrated real-world risk.
-
-The separate seven-factor endpoint uses the saved linear regression coefficients in `hospitalbedoccupancypredictor.py` for length-of-stay estimation. That script references `hospital_bed_occupancy_los_10000_clean.csv`, which is not included in this workspace. The coefficient model therefore cannot be independently retrained or evaluated here. The UI asks for the source encoding for social support rather than assuming a scale.
-
-## Data limitations
-
-The bundled CSV contains 984 rows but has no documented source, collection method, data dictionary, currency, or length-of-stay unit. Several values are unusually regular within conditions, suggesting the data may be synthetic or constructed. Cross-validation results on this dataset do not establish performance on new hospitals or patients.
-
-This project is for learning and demonstration only. Do not use it for diagnosis, treatment, triage, staffing, bed allocation, reimbursement, or other real decisions. A credible hospital operations model would need representative, time-stamped data, documented labels and units, leakage review, temporal and external validation, subgroup analysis, privacy controls, and domain review.
+Both datasets have undocumented provenance, collection method, and data dictionary. The legacy sample has 984 rows; the LOS sample has 10,000. Cross-validation and random holdout results do not establish performance on new patients or hospitals. This project is for learning only—not diagnosis, treatment, triage, staffing, bed allocation, reimbursement, or other real decisions. A credible operational model needs representative time-stamped data, feature-timing review, temporal and external validation, subgroup analysis, privacy controls, and domain review.

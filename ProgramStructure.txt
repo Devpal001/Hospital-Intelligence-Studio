@@ -1,0 +1,34 @@
+Admission-time length-of-stay model
+===================================
+
+Private local training data
+  hospital_bed_occupancy_los_10000_clean.csv
+             |
+             v
+train_los_model.py
+  - validate required columns
+  - hold out 20% of rows for evaluation
+  - five-fold cross-validation
+  - numeric imputation + scaling
+  - categorical imputation + one-hot encoding
+  - linear regression fit and evaluation
+       |                         |
+       v                         v
+models/los_admission_pipeline.joblib  models/los_model_metrics.json
+       |                         |
+       +------------+------------+
+                    v
+FastAPI /api/predict/length-of-stay and /api/model-info
+                    |
+                    v
+Vercel dashboard prediction form
+
+Admission-time predictors: age, gender, primary diagnosis, comorbidity count,
+planned surgery flag, insurance type, and social support.
+
+Excluded: patient ID (identifier), ICU status and acquired infection (may be
+known only after admission), and discharge delay (known near discharge). These
+could be considered for a separate in-stay update model after timing is defined.
+
+The input data has undocumented provenance. Random-split metrics are only an
+educational estimate; they are not clinical or operational validation.

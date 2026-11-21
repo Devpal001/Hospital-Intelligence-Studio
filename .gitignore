@@ -11,3 +11,4 @@ __pycache__/
 .vercel/
 .DS_Store
 .ipynb_checkpoints/
+hospital_bed_occupancy_los_10000_clean.csv

@@ -7,3 +7,6 @@ explore.ipynb
 requirements-streamlit.txt
 .vscode/
 Structure.txt
+hospital_bed_occupancy_los_10000_clean.csv
+scikit.py
+hospitalbedoccupancypredictor.py

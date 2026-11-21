@@ -3,7 +3,7 @@
   "functions": {
     "main.py": {
       "maxDuration": 60,
-      "includeFiles": "{templates/**,static/**,hospital data analysis.csv}"
+      "includeFiles": "{templates/**,static/**,hospital data analysis.csv,models/**}"
     }
   }
 }

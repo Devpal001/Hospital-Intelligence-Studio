@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import json
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
+import joblib
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -19,6 +21,8 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 ROOT = Path(__file__).resolve().parent
 DATA_PATH = ROOT / "hospital data analysis.csv"
+LOS_MODEL_PATH = ROOT / "models" / "los_admission_pipeline.joblib"
+LOS_METRICS_PATH = ROOT / "models" / "los_model_metrics.json"
 FEATURES = ["Age", "Gender", "Condition", "Procedure"]
 CLASSIFICATION_TARGETS = ["Readmission", "Outcome", "Satisfaction"]
 REGRESSION_TARGETS = ["Cost", "Length_of_Stay"]
@@ -39,13 +43,13 @@ class PatientScenario(BaseModel):
 
 
 class LengthOfStayScenario(BaseModel):
-    age: float = Field(ge=0, le=120)
+    age: float = Field(ge=1, le=120)
+    gender: str = Field(min_length=1, max_length=30)
+    primary_diagnosis: str = Field(min_length=1, max_length=100)
     comorbidities_count: float = Field(ge=0, le=50)
     surgery_flag: int = Field(ge=0, le=1)
-    icu_flag: int = Field(ge=0, le=1)
-    hospital_acquired_infection: int = Field(ge=0, le=1)
-    discharge_delay_days: float = Field(ge=0, le=365)
-    social_support: float = Field(ge=0, le=100)
+    insurance_type: str = Field(min_length=1, max_length=40)
+    social_support: int = Field(ge=0, le=1)
 
 
 @lru_cache(maxsize=1)
@@ -182,21 +186,35 @@ def predict(scenario: PatientScenario) -> dict[str, Any]:
 
 @app.post("/api/predict/length-of-stay")
 def predict_length_of_stay(scenario: LengthOfStayScenario) -> dict[str, Any]:
-    """Serve the seven-factor multivariate linear model from the supplied script."""
-    weights = np.array([0.09271369, 1.07433568, 0.68028327, 0.55618327, 0.33216646, 1.00949448, 0.24837546])
-    values = np.array([
-        scenario.age,
-        scenario.comorbidities_count,
-        scenario.surgery_flag,
-        scenario.icu_flag,
-        scenario.hospital_acquired_infection,
-        scenario.discharge_delay_days,
-        scenario.social_support,
-    ])
-    estimate = float(np.dot(values, weights) + 0.6651)
+    """Predict LOS from features available at admission using the trained pipeline."""
+    if not LOS_MODEL_PATH.exists():
+        raise HTTPException(status_code=503, detail="LOS model artifact is unavailable. Train it with train_los_model.py.")
+    model = load_los_model()
+    row = pd.DataFrame([{
+        "Age": scenario.age,
+        "Gender": scenario.gender,
+        "Primary_Diagnosis": scenario.primary_diagnosis,
+        "Comorbidities_Count": scenario.comorbidities_count,
+        "Surgery_Flag": scenario.surgery_flag,
+        "Insurance_Type": scenario.insurance_type,
+        "Social_Support": scenario.social_support,
+    }])
+    estimate = float(model.predict(row)[0])
     return {
-        "prediction_days": estimate,
-        "model": "Seven-factor multivariate linear regression",
+        "prediction_days": max(0.0, estimate),
+        "model": "Admission-time multivariate linear regression",
         "inputs": scenario.model_dump(),
-        "note": "Uses the coefficient values in hospitalbedoccupancypredictor.py. The referenced training CSV is not present here, so this estimate has not been independently validated.",
+        "note": "Educational estimate from an undocumented sample; not validated for clinical or operational decisions.",
     }
+
+
+@lru_cache(maxsize=1)
+def load_los_model() -> Any:
+    return joblib.load(LOS_MODEL_PATH)
+
+
+@app.get("/api/model-info")
+def model_info() -> dict[str, Any]:
+    if not LOS_METRICS_PATH.exists():
+        raise HTTPException(status_code=503, detail="Model evaluation metadata is unavailable.")
+    return json.loads(LOS_METRICS_PATH.read_text(encoding="utf-8"))

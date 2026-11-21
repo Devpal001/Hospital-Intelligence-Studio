@@ -1,0 +1,29 @@
+{
+  "model": "Linear regression with scaled numeric and one-hot categorical features",
+  "target": "Length_of_Stay_Days",
+  "features": [
+    "Age",
+    "Comorbidities_Count",
+    "Surgery_Flag",
+    "Social_Support",
+    "Gender",
+    "Primary_Diagnosis",
+    "Insurance_Type"
+  ],
+  "excluded_features": {
+    "Patient_ID": "Identifier; not a meaningful predictor",
+    "ICU_Flag": "May be determined after admission",
+    "Hospital_Acquired_Infection": "Occurs after admission",
+    "Discharge_Delay_Days": "Known at or near discharge; leakage for admission-time forecast"
+  },
+  "rows": 10000,
+  "split": "80/20 random holdout, random_state=42",
+  "holdout": {
+    "mae_days": 2.1772,
+    "rmse_days": 2.8129,
+    "r2": 0.269
+  },
+  "five_fold_cv_mae_days_mean": 2.1634,
+  "five_fold_cv_mae_days_std": 0.0382,
+  "caveat": "Dataset provenance and feature timing are undocumented. Random-split results are educational and do not establish real-hospital performance."
+}
